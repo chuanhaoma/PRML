@@ -1,0 +1,14 @@
+# Ignore VSCode settings
+.vscode/
+
+# Ignore Python cache
+code/__pycache__/
+
+# Ignore model file
+model/
+
+#Ignore dataset
+dataset/
+
+#Ignore dummy document
+docs/
