@@ -65,10 +65,12 @@ class POLLEN73S(Dataset):
         return sample, label
 
 # 支持变换操作的子集
-class TransformSubset(Subset):
+class TransformSubset(Dataset):
     '''A custom subset class with transform function'''
     def __init__(self, dataset, indices, transform=None):
-        super().__init__(dataset, indices)
+        super().__init__()
+        self.dataset = dataset
+        self.indices = indices
         self.transfrom = transform
 
     def __getitem__(self, idx): #同时支持索引访问操作
@@ -92,8 +94,8 @@ def get_basic_transform():
         transforms.RandomHorizontalFlip(),
         # 随机旋转角度
         transforms.RandomRotation(15),
-        # 随机转换为灰度三通道
-        transforms.RandomGrayscale(num_output_channels=3),
+        # 设置resize的图片尺寸
+        transforms.Resize(size=(224, 224)),
         # 转为Tensor
         transforms.ToTensor(),
         # 标准化
