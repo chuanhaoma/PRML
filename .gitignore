@@ -7,8 +7,5 @@ code/__pycache__/
 # Ignore model file
 model/
 
-#Ignore dataset
-dataset/
-
 #Ignore dummy document
 docs/
