@@ -1,12 +1,22 @@
+import os
 import torch
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-content = torch.load("./model/best_model_02.model", map_location=torch.device('cpu'))
+MODEL_SAVE_PATH = './model'
+fig_title = 'Fine-tuning Classifier Header on ViT Baseline Model'
+model_name = 'best_model_02_60epochs.model'
+fig_file_name = 'vit-head-60epochs.png'
+
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+model_path = os.path.join(MODEL_SAVE_PATH, model_name)
+fig_path = os.path.join(MODEL_SAVE_PATH, fig_file_name)
+content = torch.load(model_path, map_location=DEVICE, weights_only=False)
 history = content['history']
 
 # 设置绘图样式
 sns.set_style("darkgrid")
+
 # 创建一个 2x2 的子图布局
 fig, axes = plt.subplots(2, 2, figsize=(12, 8))  # figsize 可以根据需要调整
 
@@ -34,11 +44,19 @@ axes[1, 1].set_title('Test Accuracy')
 axes[1, 1].set_xlabel('Epoch')
 axes[1, 1].set_ylabel('Accuracy')
 
+# 训练轮次
+epoch = len(history['test_acc'])
 # 添加总标题
-plt.suptitle('Fine-tuning on ViT Baseline model - 60 epochs', fontsize=16)
+plt.suptitle(f'{fig_title} - {epoch} epochs', fontsize=16)
 
 # 调整布局
 plt.tight_layout()
 
+# 保存图像
+plt.savefig(fig_path)
+
 # 显示图形
 plt.show()
+
+# 打印最大准确率
+print(max(history['test_acc']))

@@ -2,7 +2,7 @@ import os
 import cv2
 import torch
 from torchvision import transforms
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from torch.utils.data import Dataset, DataLoader, Subset
 
 DEFAULT_DATASET_DIR = './dataset/'
@@ -88,8 +88,8 @@ def get_basic_transform():
     train_transform = transforms.Compose([
         # Resize只支持PIL格式的图片，所以首先需要转成PIL
         transforms.ToPILImage(mode='RGB'),
-        # 随机尺寸变换
-        transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),
+        # 随机尺寸变换 (暂时不启用)
+        # transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),
         # 随机水平翻转
         transforms.RandomHorizontalFlip(),
         # 随机旋转角度
@@ -137,3 +137,34 @@ def get_POLLEN73S_dataloader(*, batch_size : int = 32, train_transform = None, t
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, drop_last=False, num_workers=num_workers)
 
     return train_loader, test_loader
+
+def get_POLLEN73S_K_Fold(*, k : int = 5, batch_size : int = 32, train_transform = None, test_transform = None, shuffle : bool = False, random_state : int = 42, num_workers : int = 0, pre_load : bool = False, dir : str = DEFAULT_DATASET_DIR):
+    "Generate train & test dataloaders for k-fold cross-validation"
+    # 初始化数据集
+    dataset = POLLEN73S(dir=dir, pre_read=pre_load)
+
+    # 分层K折交叉验证数据集划分
+    skf = StratifiedKFold(n_splits=k, random_state=(random_state if shuffle else None), shuffle=shuffle)
+
+    # 划分结果
+    train_loaders = [] # 训练集加载器
+    test_loaders = [] # 测试集加载器
+
+    # 数据集样本索引
+    indices = list(range(len(dataset)))
+
+    # K折迭代
+    for train_indices, test_indices in skf.split(indices, dataset.labels):
+        # 创建训练集和测试集的Subset
+        train_dataset = TransformSubset(dataset, train_indices, train_transform)
+        test_dataset = TransformSubset(dataset, test_indices, test_transform)
+
+        # 创建DataLoader
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=False, num_workers=num_workers)
+        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, drop_last=False, num_workers=num_workers)
+        
+        # 添加进列表
+        train_loaders.append(train_loader)
+        test_loaders.append(test_loader)
+    
+    return train_loaders, test_loaders

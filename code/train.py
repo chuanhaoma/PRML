@@ -2,7 +2,6 @@ import os
 import torch
 from torch import nn
 from torch import optim
-from torch.optim import lr_scheduler
 from tqdm import tqdm
 
 import dataset
@@ -97,19 +96,24 @@ def test_step(model, loader, loss_fn, DEVICE):
     
     return test_loss, test_acc
 
-def save_model(obj, history, max_length = 3, path = MODEL_SAVE_PATH):
+def save_model(obj, history, max_length : int = 3, prefix : str = "", path : str = MODEL_SAVE_PATH):
     """
     存储模型与训练记录到文件
     @param obj 训练参数
     @param history 训练记录
-    @param max_length 模型保存最大数量 超过最大数量从头开始覆盖
+    @param max_length 模型保存最大数量 
+    @param prefix 模型文件名前缀
     @param path 保存路径
     """
     index = history['save_index'] + 1
     index = 0 if (index >= max_length) else index
     history['save_index'] = index
 
-    save_path = os.path.join(path, f"best_model_{index:02d}.model")
+    file_name = f"best_model_{index:02d}.model"
+    if len(prefix) > 0: # 如果有前缀
+        file_name = prefix + "_" + file_name
+    
+    save_path = os.path.join(path, file_name)
     save_content = {'obj': obj, 'history': history}
     torch.save(save_content, save_path)
 
@@ -122,7 +126,7 @@ def load_model(path):
     load_content = torch.load(path)
     return load_content['obj'], load_content['history']
 
-def train(obj, train_loader, test_loader, epochs):
+def train(obj, train_loader, test_loader, epochs : int = 10, save : bool = True, save_prefix : str = "", path : str = MODEL_SAVE_PATH):
     """
     根据参数与数据集训练模型
     """
@@ -139,8 +143,9 @@ def train(obj, train_loader, test_loader, epochs):
         history['train_loss'].append(train_loss)
         history['train_acc'].append(train_acc)
 
+        LR = optimizer.param_groups[0]['lr']
         # 打印训练结果
-        tqdm_iter.write(f"Epoch {epoch}: Train Loss: {train_loss:.6f}, Train Acc: {(train_acc * 100):.2f}%")
+        tqdm_iter.write(f"Epoch {epoch}: Train Loss: {train_loss:.6f}, Train Acc: {(train_acc * 100):.2f}%, lr: {LR:.6f}")
 
         # 随后进行测试
         test_loss, test_acc = test_step(model, test_loader, loss_fn, DEVICE)
@@ -151,20 +156,22 @@ def train(obj, train_loader, test_loader, epochs):
         tqdm_iter.write(f"Epoch {epoch}: Test Loss: {test_loss:.6f}, Test Acc: {(test_acc * 100):.2f}%")
         
         # 学习率调度
-        scheduler.step(test_acc)
+        scheduler.step()
 
-        if test_acc > best_acc:
+        if test_acc > best_acc: # 如果当前测试acc大于最佳acc
             best_acc = test_acc
             obj = save_obj(model, optimizer, scheduler, loss_fn, DEVICE, obj['batch_size'], obj['random_state'])
-            save_model(obj, history)
-            tqdm_iter.write("Best model saved.")
+            if save: # 如果选择保存模型文件
+                save_model(obj, history, prefix=save_prefix, path=path)
+                index = history['save_index']
+                tqdm_iter.write(f"Best model saved with index {index}.")
     
     index = history['save_index']
     print(f'Training complete. Best test accuracy: {best_acc:.4f}. Model saved with index {index}.')
 
-    return obj, history
+    return obj, history, best_acc
 
-if True:
+if False: # 分类头优化
     EPOCHS = 240
     DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = ViTForPollenClassification() # 模型
@@ -178,8 +185,28 @@ if True:
     ) # 产生数据集加载器
 
     loss_fn = nn.CrossEntropyLoss().to(DEVICE) # 交叉熵损失函数
-    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4) # 采用AdamW优化器
-    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=3, factor=0.5, verbose=True) # 学习率调度器
+    optimizer = optim.AdamW(model.parameters(), lr=5e-5, weight_decay=1e-5) # 采用AdamW优化器
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS, eta_min=1e-7) # 学习率调度器
 
     obj = save_obj(model, optimizer, scheduler, loss_fn, DEVICE)
-    train(obj, train_dataloader, test_dataloader, EPOCHS)
+    train(obj, train_dataloader, test_dataloader, EPOCHS, MODEL_SAVE_PATH)
+
+if False: # 全量优化
+    EPOCHS = 120
+    DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = ViTForPollenClassification(all_weight=True) # 模型
+
+    train_transform, test_transform = dataset.get_basic_transform() # 数据集变换
+    train_dataloader, test_dataloader = dataset.get_POLLEN73S_dataloader(
+        batch_size=16, 
+        ratio=0.3, 
+        train_transform=train_transform, 
+        test_transform=test_transform
+    ) # 产生数据集加载器
+
+    loss_fn = nn.CrossEntropyLoss().to(DEVICE) # 交叉熵损失函数
+    optimizer = optim.AdamW(model.parameters(), lr=5e-5, weight_decay=1e-3) # 采用AdamW优化器
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS, eta_min=1e-6) # 学习率调度器
+
+    obj = save_obj(model, optimizer, scheduler, loss_fn, DEVICE)
+    train(obj, train_dataloader, test_dataloader, EPOCHS, './model2')
