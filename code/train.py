@@ -126,7 +126,7 @@ def load_model(path):
     load_content = torch.load(path)
     return load_content['obj'], load_content['history']
 
-def train(obj, train_loader, test_loader, epochs : int = 10, save : bool = True, save_prefix : str = "", path : str = MODEL_SAVE_PATH):
+def train(obj, train_loader, test_loader, epochs : int = 10, scheduler_acc : bool = False, save : bool = True, save_prefix : str = "", path : str = MODEL_SAVE_PATH):
     """
     根据参数与数据集训练模型
     """
@@ -156,7 +156,10 @@ def train(obj, train_loader, test_loader, epochs : int = 10, save : bool = True,
         tqdm_iter.write(f"Epoch {epoch}: Test Loss: {test_loss:.6f}, Test Acc: {(test_acc * 100):.2f}%")
         
         # 学习率调度
-        scheduler.step()
+        if scheduler_acc:
+            scheduler.step(test_acc)
+        else:
+            scheduler.step()
 
         if test_acc > best_acc: # 如果当前测试acc大于最佳acc
             best_acc = test_acc
@@ -170,43 +173,3 @@ def train(obj, train_loader, test_loader, epochs : int = 10, save : bool = True,
     print(f'Training complete. Best test accuracy: {best_acc:.4f}. Model saved with index {index}.')
 
     return obj, history, best_acc
-
-if False: # 分类头优化
-    EPOCHS = 240
-    DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = ViTForPollenClassification() # 模型
-
-    train_transform, test_transform = dataset.get_basic_transform() # 数据集变换
-    train_dataloader, test_dataloader = dataset.get_POLLEN73S_dataloader(
-        batch_size=16, 
-        ratio=0.3, 
-        train_transform=train_transform, 
-        test_transform=test_transform
-    ) # 产生数据集加载器
-
-    loss_fn = nn.CrossEntropyLoss().to(DEVICE) # 交叉熵损失函数
-    optimizer = optim.AdamW(model.parameters(), lr=5e-5, weight_decay=1e-5) # 采用AdamW优化器
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS, eta_min=1e-7) # 学习率调度器
-
-    obj = save_obj(model, optimizer, scheduler, loss_fn, DEVICE)
-    train(obj, train_dataloader, test_dataloader, EPOCHS, MODEL_SAVE_PATH)
-
-if False: # 全量优化
-    EPOCHS = 120
-    DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = ViTForPollenClassification(all_weight=True) # 模型
-
-    train_transform, test_transform = dataset.get_basic_transform() # 数据集变换
-    train_dataloader, test_dataloader = dataset.get_POLLEN73S_dataloader(
-        batch_size=16, 
-        ratio=0.3, 
-        train_transform=train_transform, 
-        test_transform=test_transform
-    ) # 产生数据集加载器
-
-    loss_fn = nn.CrossEntropyLoss().to(DEVICE) # 交叉熵损失函数
-    optimizer = optim.AdamW(model.parameters(), lr=5e-5, weight_decay=1e-3) # 采用AdamW优化器
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS, eta_min=1e-6) # 学习率调度器
-
-    obj = save_obj(model, optimizer, scheduler, loss_fn, DEVICE)
-    train(obj, train_dataloader, test_dataloader, EPOCHS, './model2')

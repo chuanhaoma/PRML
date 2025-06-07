@@ -7,5 +7,8 @@ code/__pycache__/
 # Ignore model file
 model/
 
-#Ignore dummy document
+# Ignore dummy document
 docs/
+
+# Ignore figure file
+figure/

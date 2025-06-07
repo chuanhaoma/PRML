@@ -3,7 +3,7 @@ import cv2
 import torch
 from torchvision import transforms
 from sklearn.model_selection import train_test_split, StratifiedKFold
-from torch.utils.data import Dataset, DataLoader, Subset
+from torch.utils.data import Dataset, DataLoader
 
 DEFAULT_DATASET_DIR = './dataset/'
 
