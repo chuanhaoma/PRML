@@ -3,12 +3,27 @@ import torchvision
 
 # 模型构建
 
-# 带预训练权重的Vision Transformer
+# 带预训练权重的Vision Transformer B-16
 class ViTForPollenClassification(nn.Module):
     def __init__(self, all_weight=False, num_classes=73):
         super().__init__()
         pretrained_vit_weights = torchvision.models.ViT_B_16_Weights.DEFAULT
         self.vit = torchvision.models.vit_b_16(weights=pretrained_vit_weights)
+
+        for parameter in self.vit.parameters(): # 冻结参数
+            parameter.requires_grad = all_weight
+
+        self.vit.heads = nn.Linear(in_features=self.vit.hidden_dim, out_features=num_classes)
+    
+    def forward(self, x):
+        return self.vit(x)
+    
+# 带预训练权重的Vision Transformer L-16
+class ViTLForPollenClassification(nn.Module):
+    def __init__(self, all_weight=False, num_classes=73):
+        super().__init__()
+        pretrained_vit_weights = torchvision.models.ViT_L_16_Weights.DEFAULT
+        self.vit = torchvision.models.vit_l_16(weights=pretrained_vit_weights)
 
         for parameter in self.vit.parameters(): # 冻结参数
             parameter.requires_grad = all_weight

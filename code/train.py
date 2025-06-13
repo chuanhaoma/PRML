@@ -1,11 +1,6 @@
-import os
+from save import Save
 import torch
-from torch import nn
-from torch import optim
 from tqdm import tqdm
-
-import dataset
-from model import ViTForPollenClassification
 
 MODEL_SAVE_PATH = './model'
 
@@ -96,37 +91,7 @@ def test_step(model, loader, loss_fn, DEVICE):
     
     return test_loss, test_acc
 
-def save_model(obj, history, max_length : int = 3, prefix : str = "", path : str = MODEL_SAVE_PATH):
-    """
-    存储模型与训练记录到文件
-    @param obj 训练参数
-    @param history 训练记录
-    @param max_length 模型保存最大数量 
-    @param prefix 模型文件名前缀
-    @param path 保存路径
-    """
-    index = history['save_index'] + 1
-    index = 0 if (index >= max_length) else index
-    history['save_index'] = index
-
-    file_name = f"best_model_{index:02d}.model"
-    if len(prefix) > 0: # 如果有前缀
-        file_name = prefix + "_" + file_name
-    
-    save_path = os.path.join(path, file_name)
-    save_content = {'obj': obj, 'history': history}
-    torch.save(save_content, save_path)
-
-def load_model(path):
-    """
-    从文件加载模型与训练记录
-    @param path 文件保存路径
-    @return 模型参数与训练记录
-    """
-    load_content = torch.load(path)
-    return load_content['obj'], load_content['history']
-
-def train(obj, train_loader, test_loader, epochs : int = 10, scheduler_acc : bool = False, save : bool = True, save_prefix : str = "", path : str = MODEL_SAVE_PATH):
+def train(obj, train_loader, test_loader, epochs : int = 10, scheduler_acc : bool = False, save : bool = True, save_prefix : str = "", max_length : int = 3, path : str = MODEL_SAVE_PATH):
     """
     根据参数与数据集训练模型
     """
@@ -165,9 +130,14 @@ def train(obj, train_loader, test_loader, epochs : int = 10, scheduler_acc : boo
             best_acc = test_acc
             obj = save_obj(model, optimizer, scheduler, loss_fn, DEVICE, obj['batch_size'], obj['random_state'])
             if save: # 如果选择保存模型文件
-                save_model(obj, history, prefix=save_prefix, path=path)
-                index = history['save_index']
+                index = history['save_index'] + 1
+                index = 0 if (index >= max_length) else index
+                history['save_index'] = index
                 tqdm_iter.write(f"Best model saved with index {index}.")
+                
+                s = Save(obj, history, prefix=save_prefix, path=path)
+                s.start()
+                
     
     index = history['save_index']
     print(f'Training complete. Best test accuracy: {best_acc:.4f}. Model saved with index {index}.')
