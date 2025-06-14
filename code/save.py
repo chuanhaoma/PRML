@@ -30,7 +30,7 @@ def load_model(path, map_location=None):
     @param path 文件保存路径
     @return 模型参数与训练记录
     """
-    load_content = torch.load(path, map_location=map_location)
+    load_content = torch.load(path, map_location=map_location, weights_only=False)
     return load_content['obj'], load_content['history']
 
 class Save(threading.Thread):
