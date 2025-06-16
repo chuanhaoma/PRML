@@ -221,7 +221,7 @@ def save_report(filename, best_accs, mean, std, epochs):
         file.write(f"Best accs: {best_accs}\n")
         file.write(f"Acc mean: {mean}, Acc std: {std}\n")
 
-if False: # 0.9834+-0.0048
+if False:
     WARMUP = 50
     COSINE = 120
     best_accs, mean, std, histories = k_fold_val_ViT_B(warmup_steps=WARMUP, cosine_steps=COSINE, save_model=True)
@@ -230,7 +230,7 @@ if False: # 0.9834+-0.0048
     for i in range(len(histories)):
         save_figure(histories[i], f"./figure/vit_{i:02d}.png", f"Fine-tuning on ViT-B-16 Model - Fold {i} Epoch {COSINE}")
     
-if False: # 0.9834+-0.0048
+if False:
     WARMUP = 50
     COSINE = 120
     best_accs, mean, std, histories = k_fold_val_ViT_L(warmup_steps=WARMUP, cosine_steps=COSINE, save_model=True)
@@ -240,7 +240,7 @@ if False: # 0.9834+-0.0048
         save_figure(histories[i], f"./figure/vitl_{i:02d}.png", f"Fine-tuning on ViT-L-16 Model - Fold {i} Epoch {COSINE}")
 
 
-if True: # 0.9885+-0.0049
+if False:
     WARMUP = 50
     COSINE = 120
     best_accs, mean, std, histories = k_fold_val_DenseNet_A(warmup_steps=WARMUP, cosine_steps=COSINE, save_model=True)

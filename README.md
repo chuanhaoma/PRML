@@ -17,7 +17,7 @@ This project implements image classification on the **POLLEN73S dataset** (73-cl
 
 - **Performance**:
   - Achieves up to **98.85% accuracy** with DenseNet-201
-  - Vision Transformer achieves **98.34% accuracy**
+  - Vision Transformer achieves **99.01% accuracy**
 
 ## 🚀 How to Run
 
@@ -47,20 +47,6 @@ if True:
 python k_fold.py
 ```
 
-### 📊 3. Visualizing Results
-1. Configure visualization in `result_visualize.py`:
-```python
-MODEL_SAVE_PATH = './model' # Your model dir
-model_name = 'best_model_02_60epochs.model'  # Your model filename
-fig_file_name = 'results.png' # Name of output figure
-fig_title = 'Training Results' # Title of output figure
-```
-
-2. Generate visualization:
-```bash
-python result_visualize.py
-```
-
 ## 📋 Requirements
 
 ### 📦 1. Python Packages
@@ -83,21 +69,22 @@ python result_visualize.py
 ## 📂 Project Structure
 ```
 project/
-├── dataset.py          # Dataset loading and preprocessing
-├── model.py            # Model architectures (ViT, DenseNet)
-├── train.py            # Training loop and utilities
-├── k_fold.py           # K-Fold cross-validation
-├── scheduler.py        # Learning rate schedulers
-├── figure.py           # Visualization functions
-├── result_visualize.py # Result visualization script
-|
-├── dataset/            # POLLEN73S dataset
-├── figure/             # Saved k-fold figures
-└── model/              # Saved model checkpoints
+├── code/                    # Project code
+|    ├── dataset.py          # Dataset loading and preprocessing
+|    ├── model.py            # Model architectures (ViT, DenseNet)
+|    ├── train.py            # Training loop and utilities
+|    ├── k_fold.py           # K-Fold cross-validation
+|    ├── scheduler.py        # Learning rate schedulers
+|    ├── figure.py           # Visualization functions
+|    ├── result_visualize.py # Result visualization script
+|    └── save.py             # Save model to file
+├── dataset/                 # POLLEN73S dataset
+├── figure/                  # Saved k-fold figures
+└── model/                   # Saved model checkpoints
 ```
 
-## 🏆 Performance Results
+## 🏆 Best Performance Results
 | Model | Accuracy | Standard Deviation | Epochs | Fold |
 |-------|----------|---------------------|--------|-----|
-| DenseNet-201 | 98.85% | ±0.49% | 75 | 5 |
-| Vision Transformer | 98.34% | ±0.48% | 170 (50 warmup + 120 cosine) | 5 |
+| DenseNet-201 | 98.85% | ±0.38% | 170 (50 warmup + 120 cosine) | 5 |
+| Vision Transformer | 99.01% | ±0.49% | 170 (50 warmup + 120 cosine) | 5 |
