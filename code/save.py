@@ -36,6 +36,19 @@ def save_report(filename, best_accs, mean, std, epochs):
         file.write(f"Best accs: {best_accs}\n")
         file.write(f"Acc mean: {mean}, Acc std: {std}\n")
 
+def save_evaluate(filename, model_name, eval_acc, f1_scores, macro_f1, auroc):
+    """
+    保存模型评估报告
+    """
+    with open(filename, 'w+') as file:
+        file.write(f"------{model_name} Evaluate Report------\n")
+        file.write(f"Eval Acc: {eval_acc}, Macro F1-score: {macro_f1}, AUROC: {auroc}\n")
+        file.write(f"F1-score for each class:\n")
+        idx = 0
+        for score in f1_scores:
+            file.write(f"\tClass idx: {idx}, F1-score: {score}\n")
+            idx += 1
+
 def save_figure(history, fig_path, fig_title):
     # 设置绘图样式
     sns.set_style("darkgrid")

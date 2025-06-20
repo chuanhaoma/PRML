@@ -39,6 +39,7 @@ def train_step(model, loader, optimizer, loss_fn, DEVICE):
     for X, y in tqdm(loader, "Train Iteration"):
         X = X.to(DEVICE)
         y = y.to(DEVICE)
+        size = y.size(0)
 
         optimizer.zero_grad() # 清除梯度
         y_pred = model(X) # 前向传播
@@ -46,10 +47,10 @@ def train_step(model, loader, optimizer, loss_fn, DEVICE):
         loss.backward() # 反向传播
         optimizer.step() # 更新参数
 
-        train_loss += loss.item() * X.size(0) # 统计损失
+        train_loss += loss.item() * size # 统计损失
         _, predicted = y_pred.max(1) # 得到标签
         
-        train_cnt += y.size(0)
+        train_cnt += size
         train_acc += predicted.eq(y).sum().item()
     
     train_loss = 0.0 if train_cnt == 0 else train_loss / train_cnt # 计算训练误差
@@ -77,13 +78,14 @@ def test_step(model, loader, loss_fn, DEVICE):
         for X, y in tqdm(loader, "Test Iteration"):
             X = X.to(DEVICE)
             y = y.to(DEVICE)
+            size =  y.size(0)
 
             y_pred = model(X) # 前向传播
             loss = loss_fn(y_pred, y) # 计算损失
-            test_loss += loss.item() * X.size(0) # 统计损失
+            test_loss += loss.item() * size # 统计损失
             _, predicted = y_pred.max(1) # 得到标签
         
-            test_cnt += y.size(0)
+            test_cnt += size
             test_acc += predicted.eq(y).sum().item()
 
         test_loss = 0.0 if test_cnt == 0 else test_loss / test_cnt # 计算测试误差

@@ -88,7 +88,7 @@ def k_fold_val(
     return best_accs, best_accs.mean(), best_accs.std(), histories # 计算均值和标准差
 
 # ViT-B-16
-if True:
+if False:
     WARMUP = 50
     COSINE = 120
     best_accs, mean, std, histories = k_fold_val(model_class=ViTForPollenClassification, warmup_steps=WARMUP, cosine_steps=COSINE, save_model=True, prefix='vitb')
@@ -98,9 +98,9 @@ if True:
         save_figure(histories[i], f"./figure/vit_{i:02d}.png", f"Fine-tuning on ViT-B-16 Model - Fold {i} Epoch {COSINE}")
 
 # ViT-L-16
-if True:
-    WARMUP = 50
-    COSINE = 120
+if False:
+    WARMUP = 25
+    COSINE = 25
     best_accs, mean, std, histories = k_fold_val(model_class=ViTLForPollenClassification, warmup_steps=WARMUP, cosine_steps=COSINE, save_model=True, prefix='vitl')
     save_report('./model/vitl_report.txt', best_accs, mean, std, COSINE)
 
@@ -108,7 +108,7 @@ if True:
         save_figure(histories[i], f"./figure/vitl_{i:02d}.png", f"Fine-tuning on ViT-L-16 Model - Fold {i} Epoch {COSINE}")
 
 # ViT-H-14
-if True:
+if False:
     WARMUP = 50
     COSINE = 120
     best_accs, mean, std, histories = k_fold_val(model_class=ViTHForPollenClassification, warmup_steps=WARMUP, cosine_steps=COSINE, save_model=True, prefix='vith')
@@ -118,7 +118,7 @@ if True:
         save_figure(histories[i], f"./figure/vith_{i:02d}.png", f"Fine-tuning on ViT-H-14 Model - Fold {i} Epoch {COSINE}")
 
 # DenseNet-201
-if True:
+if False:
     WARMUP = 50
     COSINE = 120
     best_accs, mean, std, histories = k_fold_val(model_class=DenseNet201ForPollenClassification, base_lr=5e-5, warmup_steps=WARMUP, cosine_steps=COSINE, save_model=True, prefix='dense')
@@ -128,7 +128,7 @@ if True:
         save_figure(histories[i], f"./figure/dense_{i:02d}.png", f"Fine-tuning on DenseNet-201 Model - Fold {i} Epoch {len(histories[i]['train_loss'])}")
 
 # ResNet-50
-if True:
+if False:
     WARMUP = 50
     COSINE = 120
     best_accs, mean, std, histories = k_fold_val(model_class=ResNet50ForPollenClassification, base_lr=1e-4, warmup_steps=WARMUP, cosine_steps=COSINE, save_model=True, prefix='resnet')
