@@ -6,18 +6,7 @@ import numpy as np
 from tqdm import tqdm
 from torch.nn import functional
 import matplotlib.pyplot as plt
-from sklearn.metrics import roc_auc_score
-
-model_path = ""
-model_name = ""
-k = 5
-fold = 0
-
-DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-obj, history = save.load_model(model_path, DEVICE)
-model = obj['model']
-model.to(DEVICE)
-
+from sklearn.metrics import roc_auc_score, f1_score
 
 def evaluate(eval_acc, pred_prob, pred_labels, true_labels, model_name : str = "Model", save_path : str = './evaluate'):
     """
@@ -47,21 +36,13 @@ def evaluate(eval_acc, pred_prob, pred_labels, true_labels, model_name : str = "
     plt.savefig(os.path.join(save_path, 'confusion_matrix.png'))
     
     # 计算F1-score
-    f1_scores = np.zeros((class_num), dtype=np.float32) # 各类别的F1 采用OvR
-    for class_id in range(class_num):
-        TP = mat[class_id, class_id]
-        FN = np.sum(mat[class_id, :]) - TP
-        FP = np.sum(mat[:, class_id]) - TP
-        P = TP / (TP + FP) # 精度
-        R = TP / (TP + FN) # 召回率
-        f1_scores[class_id] = 0 if (P + R) == 0 else P * R / (P + R)
-    macro_f1 = np.mean(f1_scores) # 宏F1-score
+    macro_f1 = f1_score(true_labels, pred_labels, average='macro')
 
     # 计算AUROC
     auroc = roc_auc_score(true_labels, pred_prob, average='macro', multi_class='ovr')
 
     # 保存结果
-    save.save_evaluate(os.path.join(save_path, 'report.txt'), model_name, eval_acc, f1_scores, macro_f1, auroc)
+    save.save_evaluate(os.path.join(save_path, 'report.txt'), model_name, eval_acc, macro_f1, auroc)
 
 def evaluate_deep(model, k : int = 5, fold : int = 0, model_name : str = "Model", save_path : str = './evaluate'):
     # 评估结果存储路径
@@ -87,7 +68,7 @@ def evaluate_deep(model, k : int = 5, fold : int = 0, model_name : str = "Model"
     true_labels = np.array([]) # 真实标签
     eval_acc = 0.0 # 评估准确率
     eval_cnt = 0 # 样本数量
-
+    DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # 得到测试集结果
     with torch.no_grad():
         model.eval()
@@ -107,6 +88,3 @@ def evaluate_deep(model, k : int = 5, fold : int = 0, model_name : str = "Model"
             eval_acc += predicted.eq(y).sum().item()
     eval_acc = 0.0 if eval_cnt == 0 else eval_acc / eval_cnt # 计算评估误差
     evaluate(eval_acc, pred_prob, pred_labels, true_labels, model_name, save_path)
-
-
-evaluate_deep(model, k, fold, model_name)

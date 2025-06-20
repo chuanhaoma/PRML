@@ -23,8 +23,24 @@ def save_model(obj, history, prefix : str = "", path : str = MODEL_SAVE_PATH):
         file_name = prefix + "_" + file_name
     
     save_path = os.path.join(path, file_name)
+    model = obj['model'].state_dict() # 提取参数
+    obj['model'] = model # 只保存参数
     save_content = {'obj': obj, 'history': history}
     torch.save(save_content, save_path)
+
+def load_model(path, model_class, map_location=None):
+    """
+    从文件加载模型与训练记录
+    @param path 文件保存路径
+    @param model_class 模型类
+    @param map_location 模型加载设备
+    @return 模型参数与训练记录
+    """
+    model = model_class(all_weight=True) # 创建空模型
+    load_content = torch.load(path, map_location=map_location, weights_only=False) # 加载模型内容
+    obj, history = load_content['obj'], load_content['history']
+    model.load_state_dict(obj['model'])
+    return obj, history
 
 def save_report(filename, best_accs, mean, std, epochs):
     """
@@ -36,7 +52,7 @@ def save_report(filename, best_accs, mean, std, epochs):
         file.write(f"Best accs: {best_accs}\n")
         file.write(f"Acc mean: {mean}, Acc std: {std}\n")
 
-def save_evaluate(filename, model_name, eval_acc, f1_scores, macro_f1, auroc):
+def save_evaluate(filename, model_name, eval_acc, macro_f1, auroc):
     """
     保存模型评估报告
     """
@@ -44,10 +60,6 @@ def save_evaluate(filename, model_name, eval_acc, f1_scores, macro_f1, auroc):
         file.write(f"------{model_name} Evaluate Report------\n")
         file.write(f"Eval Acc: {eval_acc}, Macro F1-score: {macro_f1}, AUROC: {auroc}\n")
         file.write(f"F1-score for each class:\n")
-        idx = 0
-        for score in f1_scores:
-            file.write(f"\tClass idx: {idx}, F1-score: {score}\n")
-            idx += 1
 
 def save_figure(history, fig_path, fig_title):
     # 设置绘图样式
@@ -90,15 +102,6 @@ def save_figure(history, fig_path, fig_title):
 
     # 保存图像
     plt.savefig(fig_path)
-
-def load_model(path, map_location=None):
-    """
-    从文件加载模型与训练记录
-    @param path 文件保存路径
-    @return 模型参数与训练记录
-    """
-    load_content = torch.load(path, map_location=map_location, weights_only=False)
-    return load_content['obj'], load_content['history']
 
 class Save(threading.Thread):
     def __init__(self, obj, history, prefix : str = "", path : str = MODEL_SAVE_PATH):
