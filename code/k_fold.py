@@ -5,10 +5,10 @@ from torch import optim
 
 import dataset
 from train import train, save_obj
+from scheduler import CosineDecayWithLinearWarmup
 from model import ViTForPollenClassification, DenseNet201ForPollenClassification, ViTLForPollenClassification, ViTHForPollenClassification, ResNet50ForPollenClassification
 from save import save_figure, save_report
 from evaluate import evaluate_deep
-from scheduler import CosineDecayWithLinearWarmup
 
 def k_fold_val(
         *,
@@ -87,6 +87,26 @@ def k_fold_val(
     best_accs = np.array(best_accs)
     return model, best_accs, best_accs.mean(), best_accs.std(), histories # 计算均值和标准差
 
+# ResNet-50
+if True:
+    WARMUP = 30
+    COSINE = 50
+    model, best_accs, mean, std, histories = k_fold_val(model_class=ResNet50ForPollenClassification, base_lr=1e-4, warmup_steps=WARMUP, cosine_steps=COSINE, save_model=True, prefix='resnet')
+    save_report('./model/resnet_report.txt', best_accs, mean, std, COSINE)
+    evaluate_deep(model, model_name='ResNet-50')
+    for i in range(len(histories)):
+        save_figure(histories[i], f"./figure/resnet_{i:02d}.png", f"Fine-tuning on ResNet-50 Model - Fold {i} Epoch {len(histories[i]['train_loss'])}")
+
+# DenseNet-201
+if True:
+    WARMUP = 50
+    COSINE = 120
+    model, best_accs, mean, std, histories = k_fold_val(model_class=DenseNet201ForPollenClassification, base_lr=5e-5, warmup_steps=WARMUP, cosine_steps=COSINE, save_model=True, prefix='dense')
+    save_report('./model/dense_report.txt', best_accs, mean, std, COSINE)
+    evaluate_deep(model, model_name='DenseNet-201')
+    for i in range(len(histories)):
+        save_figure(histories[i], f"./figure/dense_{i:02d}.png", f"Fine-tuning on DenseNet-201 Model - Fold {i} Epoch {len(histories[i]['train_loss'])}")
+
 # ViT-B-16
 if True:
     WARMUP = 50
@@ -108,7 +128,7 @@ if True:
         save_figure(histories[i], f"./figure/vitl_{i:02d}.png", f"Fine-tuning on ViT-L-16 Model - Fold {i} Epoch {COSINE}")
 
 # ViT-H-14
-if False:
+if False: # Have Not Tested
     WARMUP = 50
     COSINE = 120
     model, best_accs, mean, std, histories = k_fold_val(model_class=ViTHForPollenClassification, warmup_steps=WARMUP, cosine_steps=COSINE, save_model=True, prefix='vith')
@@ -116,23 +136,3 @@ if False:
 
     for i in range(len(histories)):
         save_figure(histories[i], f"./figure/vith_{i:02d}.png", f"Fine-tuning on ViT-H-14 Model - Fold {i} Epoch {COSINE}")
-
-# DenseNet-201
-if True:
-    WARMUP = 50
-    COSINE = 120
-    model, best_accs, mean, std, histories = k_fold_val(model_class=DenseNet201ForPollenClassification, base_lr=5e-5, warmup_steps=WARMUP, cosine_steps=COSINE, save_model=True, prefix='dense')
-    save_report('./model/dense_report.txt', best_accs, mean, std, COSINE)
-    evaluate_deep(model, model_name='DenseNet-201')
-    for i in range(len(histories)):
-        save_figure(histories[i], f"./figure/dense_{i:02d}.png", f"Fine-tuning on DenseNet-201 Model - Fold {i} Epoch {len(histories[i]['train_loss'])}")
-
-# ResNet-50
-if True:
-    WARMUP = 50
-    COSINE = 120
-    model, best_accs, mean, std, histories = k_fold_val(model_class=ResNet50ForPollenClassification, base_lr=1e-4, warmup_steps=WARMUP, cosine_steps=COSINE, save_model=True, prefix='resnet')
-    save_report('./model/resnet_report.txt', best_accs, mean, std, COSINE)
-    evaluate_deep(model, model_name='ResNet-50')
-    for i in range(len(histories)):
-        save_figure(histories[i], f"./figure/resnet_{i:02d}.png", f"Fine-tuning on ResNet-50 Model - Fold {i} Epoch {len(histories[i]['train_loss'])}")

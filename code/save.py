@@ -8,13 +8,14 @@ threadLock = threading.Lock()
 
 MODEL_SAVE_PATH = './model'
 
-def save_model(obj, history, prefix : str = "", path : str = MODEL_SAVE_PATH):
+def save_model(obj, history, prefix : str="", path : str=MODEL_SAVE_PATH, full: bool=False):
     """
     存储模型与训练记录到文件
     @param obj 训练参数
     @param history 训练记录
     @param prefix 模型文件名前缀
     @param path 保存路径
+    @param full 保存整个模型或只保存参数
     """
     index = history['save_index']
 
@@ -23,23 +24,31 @@ def save_model(obj, history, prefix : str = "", path : str = MODEL_SAVE_PATH):
         file_name = prefix + "_" + file_name
     
     save_path = os.path.join(path, file_name)
-    model = obj['model'].state_dict() # 提取参数
-    obj['model'] = model # 只保存参数
+    if not full: # 如果不保存完整的模型结构
+        model = obj['model'].state_dict() # 提取参数
+        obj['model'] = model # 只保存参数
     save_content = {'obj': obj, 'history': history}
     torch.save(save_content, save_path)
 
-def load_model(path, model_class, map_location=None):
+def load_model(path, model_class=None, map_location=None, full=False):
     """
     从文件加载模型与训练记录
     @param path 文件保存路径
     @param model_class 模型类
     @param map_location 模型加载设备
+    @param full 保存整个模型或只保存参数
     @return 模型参数与训练记录
     """
-    model = model_class(all_weight=True) # 创建空模型
+    
     load_content = torch.load(path, map_location=map_location, weights_only=False) # 加载模型内容
     obj, history = load_content['obj'], load_content['history']
-    model.load_state_dict(obj['model'])
+    if not full: # 如果不是存完整的模型 而是只存模型参数
+        if model_class == None: # 没有提供模型类构造器
+            print("Please provide model class constructor")
+            return None, None
+        model = model_class(all_weight=True) # 创建空模型
+        model.load_state_dict(obj['model'])
+        obj['model'] = model.to(map_location)
     return obj, history
 
 def save_report(filename, best_accs, mean, std, epochs):
@@ -59,9 +68,11 @@ def save_evaluate(filename, model_name, eval_acc, macro_f1, auroc):
     with open(filename, 'w+') as file:
         file.write(f"------{model_name} Evaluate Report------\n")
         file.write(f"Eval Acc: {eval_acc}, Macro F1-score: {macro_f1}, AUROC: {auroc}\n")
-        file.write(f"F1-score for each class:\n")
 
 def save_figure(history, fig_path, fig_title):
+    """
+    保存训练与测试曲线图
+    """
     # 设置绘图样式
     sns.set_style("darkgrid")
 

@@ -29,7 +29,8 @@ def evaluate(eval_acc, pred_prob, pred_labels, true_labels, model_name : str = "
         true_label = int(item[1])
         pred_label = int(item[0])
         mat[true_label, pred_label] += 1
-    
+    s = np.sum(mat, axis=1, keepdims=True)
+    mat = mat / s # 归一化 转为比例
     plt.matshow(mat, cmap='Purples')
     plt.title(f'Confusion Matrix - {model_name}')
     plt.colorbar()

@@ -17,10 +17,12 @@ class POLLEN73S(Dataset):
     
     def load_data(self, dir : str):
         "Load dataset from specific dir"
-        class_names = self.get_label_mapping(dir) # 得到数据集下所有分类
+        class_names = self.get_label_mapping() # 得到数据集下所有分类
         for [idx, name] in enumerate(class_names): # 打开各个目录
             class_path = os.path.join(dir, name) # 获取类别文件夹路径
-            class_files = [os.path.join(class_path, item) for item in os.listdir(class_path)] # 获取类别下数据文件名
+            file_names = os.listdir(class_path) # 获取类别下数据文件名
+            file_names.sort() # 排序 防止顺序错乱打乱fold
+            class_files = [os.path.join(class_path, item) for item in file_names] # 获取类别下数据文件名
 
             if self.pre_read: # 开启预读取
                 images = [self.read_image(file) for file in class_files] # 一次读取一批图像
@@ -29,9 +31,9 @@ class POLLEN73S(Dataset):
             self.path.extend(class_files)
             self.labels.extend([idx] * len(class_files))
 
-    def get_label_mapping(self, dir : str = DEFAULT_DATASET_DIR):
+    def get_label_mapping(self):
         "Get the mapping array from idx to label string"
-        class_names = os.listdir(dir) # 得到数据集下所有分类
+        class_names = ["qualea_multiflora","archontophoenix_cunninghamiana","caesalpinia_peltophoroides","bacopa_australis","chromolaena_laevigata","arrabidaea_florida","myracroduon_urundeuva","eucalyptus_sp","serjania_sp","aspilia_grazielae","schizolobium_parahyba","anadenanthera_colubrina","senegalia_plumosa","schinus_sp","ceiba_speciosa","cordia_trichotoma","ouratea_hexasperma","sida_cerradoensis","serjania_erecta","ochroma pyramidale","matayba_guianensis","mimosa_ditans","machaerium_aculeatum","trembleya_phlogiformis","hortia_oreadica","ricinus_communis","tapirira_guianensis","erythrina_mulungu","doliocarpus_dentatus","luehea_divaricata","zea_mays","cecropia_pachystachya","manihot_esculenta","tabebuia_rosealba","dipteryx_alata","solanum_sisymbriifolium","syagrus_romanzoffiana","magnolia_champaca","genipa_auniricana","caryocar_brasiliensis","mimosa_pigra","arachis_sp","mabea_fistulifera","hyptis_sp","tradescantia_Pallida","ligustrum_lucidum","dianella_tasmanica","myrcia_guianensis","cissus_spinosa","symplocos_nitens","poaceae_sp","tridax_procumbens","combretum_discolor","gomphrena_sp","paullinia_spicata","acrocomia_aculeta","serjania_hebecarpa","vochysia_divergens","cosmos_caudatus","mauritia_flexuosa","tabebuia_chysotricha","cissus_campestris","brugmansia_suaveolens","trema_micrantha","passiflora_gibertii","serjania_laruotteana","mitostemma_brevifilis","croton_urucurana","pachira_aquatica","faramea_sp","protium_heptaphyllum","piper_aduncum","guazuma_ulmifolia"]
         return class_names
 
     def __init__(self, *, transform = None, dir : str = DEFAULT_DATASET_DIR, pre_read : bool = False):
