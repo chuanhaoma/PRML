@@ -10,6 +10,9 @@ class ViTForPollenClassification(nn.Module):
         pretrained_vit_weights = torchvision.models.ViT_B_16_Weights.DEFAULT
         self.vit = torchvision.models.vit_b_16(weights=pretrained_vit_weights)
 
+        for block in self.vit.encoder.layers: # 开启自注意力
+            block.return_attention = True
+
         for parameter in self.vit.parameters(): # 冻结参数
             parameter.requires_grad = all_weight
 
@@ -25,6 +28,9 @@ class ViTLForPollenClassification(nn.Module):
         pretrained_vit_weights = torchvision.models.ViT_L_16_Weights.DEFAULT
         self.vit = torchvision.models.vit_l_16(weights=pretrained_vit_weights)
 
+        for block in self.vit.encoder.layers: # 开启自注意力
+            block.return_attention = True
+        
         for parameter in self.vit.parameters(): # 冻结参数
             parameter.requires_grad = all_weight
 
@@ -40,6 +46,9 @@ class ViTHForPollenClassification(nn.Module):
         pretrained_vit_weights = torchvision.models.ViT_H_14_Weights.DEFAULT
         self.vit = torchvision.models.vit_h_14(weights=pretrained_vit_weights)
 
+        for block in self.vit.encoder.layers: # 开启自注意力
+            block.return_attention = True
+        
         for parameter in self.vit.parameters(): # 冻结参数
             parameter.requires_grad = all_weight
 
