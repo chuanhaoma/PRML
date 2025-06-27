@@ -8,6 +8,7 @@ from torch.nn import functional
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score, f1_score
 from torchvision.utils import make_grid
+from model import ViTForPollenClassification, ViTLForPollenClassification
 
 def visualize_feature_maps(model, image, model_name, save_path, sample_idx):
     """
@@ -56,7 +57,7 @@ def visualize_feature_maps(model, image, model_name, save_path, sample_idx):
     plt.savefig(os.path.join(save_path, f'feature_map_{sample_idx}.png'))
     plt.close()
 
-def visualize_attention_maps(model, image, model_name, save_path, sample_idx):
+def visualize_attention_maps(model, image, model_name, save_path, sample_idx, prefix='pos'):
     """
     可视化ViT模型的每一层注意力图
     """
@@ -97,7 +98,7 @@ def visualize_attention_maps(model, image, model_name, save_path, sample_idx):
     image_denorm = image_denorm.clamp(0, 1)
     
     # 为每个样本创建单独的文件夹
-    sample_dir = os.path.join(save_path, f"sample_{sample_idx}")
+    sample_dir = os.path.join(save_path, prefix, f"sample_{sample_idx}")
     os.makedirs(sample_dir, exist_ok=True)
     
     # 处理每一层的注意力
@@ -179,7 +180,7 @@ def visualize_attention_maps(model, image, model_name, save_path, sample_idx):
         axes[row, col].axis('off')
     
     plt.tight_layout()
-    plt.savefig(os.path.join(save_path, f'sample_{sample_idx}_all_layers.png'))
+    plt.savefig(os.path.join(save_path, f'{prefix}_sample_{sample_idx}_all_layers.png'))
     plt.close()
 
 def evaluate(eval_acc, pred_prob, pred_labels, true_labels, model_name : str = "Model", save_path : str = './evaluate'):
@@ -278,13 +279,21 @@ def evaluate_deep(model, k: int = 5, fold: int = 0, model_name: str = "Model", s
     # 可视化中间结果
     for i, image in enumerate(sample_images):
         if "ViT" in model_name:
-            visualize_attention_maps(model, image, model_name, save_path, i)
+            # 展示已学习模型的注意力权重
+            visualize_attention_maps(model, image, model_name, save_path, i, 'pos')
+
+            # 引入未迁移学习的模型作对比
+            if "B-16" in model_name:
+                neg_model = ViTForPollenClassification(all_weight=True)
+            else:
+                neg_model = ViTLForPollenClassification(all_weight=True)
+            visualize_attention_maps(neg_model, image, model_name, save_path, i, 'neg')
         else:
             visualize_feature_maps(model, image, model_name, save_path, i)
 
 # Usage:
-# path = r".\model\resnet\resnet_fold0_best_model.model"
-# name = "ResNet-50"
+# path = r".\model\vitl\vitl_fold0_best_model.model"
+# name = "ViT-L-16"
 # DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # obj, history = save.load_model(path, None, map_location=DEVICE, full=True)
 # model = obj['model'].to(DEVICE)

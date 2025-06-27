@@ -1,9 +1,12 @@
 import os
 import cv2
 import torch
+import numpy as np
 from torchvision import transforms
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from torch.utils.data import Dataset, DataLoader
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 DEFAULT_DATASET_DIR = './dataset/'
 
@@ -35,6 +38,16 @@ class POLLEN73S(Dataset):
         "Get the mapping array from idx to label string"
         class_names = ["qualea_multiflora","archontophoenix_cunninghamiana","caesalpinia_peltophoroides","bacopa_australis","chromolaena_laevigata","arrabidaea_florida","myracroduon_urundeuva","eucalyptus_sp","serjania_sp","aspilia_grazielae","schizolobium_parahyba","anadenanthera_colubrina","senegalia_plumosa","schinus_sp","ceiba_speciosa","cordia_trichotoma","ouratea_hexasperma","sida_cerradoensis","serjania_erecta","ochroma pyramidale","matayba_guianensis","mimosa_ditans","machaerium_aculeatum","trembleya_phlogiformis","hortia_oreadica","ricinus_communis","tapirira_guianensis","erythrina_mulungu","doliocarpus_dentatus","luehea_divaricata","zea_mays","cecropia_pachystachya","manihot_esculenta","tabebuia_rosealba","dipteryx_alata","solanum_sisymbriifolium","syagrus_romanzoffiana","magnolia_champaca","genipa_auniricana","caryocar_brasiliensis","mimosa_pigra","arachis_sp","mabea_fistulifera","hyptis_sp","tradescantia_Pallida","ligustrum_lucidum","dianella_tasmanica","myrcia_guianensis","cissus_spinosa","symplocos_nitens","poaceae_sp","tridax_procumbens","combretum_discolor","gomphrena_sp","paullinia_spicata","acrocomia_aculeta","serjania_hebecarpa","vochysia_divergens","cosmos_caudatus","mauritia_flexuosa","tabebuia_chysotricha","cissus_campestris","brugmansia_suaveolens","trema_micrantha","passiflora_gibertii","serjania_laruotteana","mitostemma_brevifilis","croton_urucurana","pachira_aquatica","faramea_sp","protium_heptaphyllum","piper_aduncum","guazuma_ulmifolia"]
         return class_names
+    
+    def get_class_distribution(self):
+        """Get the dict of the number of items in each class"""
+        class_counts = {}
+        class_names = self.get_label_mapping()
+        labels_np = np.array(self.labels)
+        
+        for idx, name in enumerate(class_names):
+            class_counts[name] = np.sum(labels_np == idx)
+        return class_counts
 
     def __init__(self, *, transform = None, dir : str = DEFAULT_DATASET_DIR, pre_read : bool = False):
         "Initialize the POLLEN73S dataset"
@@ -170,3 +183,69 @@ def get_POLLEN73S_K_Fold(*, k : int = 5, batch_size : int = 32, train_transform 
         test_loaders.append(test_loader)
     
     return train_loaders, test_loaders
+
+def visualize_class_distribution(dataset_dir=DEFAULT_DATASET_DIR, figsize=(20, 8), max_categories=None):
+    """
+    可视化数据集中的类别分布（垂直条形图）
+    Args:
+        dataset_dir: 数据集路径
+        figsize: 图表尺寸（宽度,高度）
+        max_categories: 最大显示类别数（None表示显示全部）
+    """
+    # 加载数据集
+    dataset = POLLEN73S(dir=dataset_dir, pre_read=False)
+    class_counts = dataset.get_class_distribution()
+    class_names = list(class_counts.keys())
+    counts = list(class_counts.values())
+    
+    # 按样本数量排序
+    sorted_indices = np.argsort(counts)[::-1]
+    sorted_class_names = [class_names[i] for i in sorted_indices]
+    sorted_counts = [counts[i] for i in sorted_indices]
+    
+    # 如果指定最大显示类别数，截取前n个
+    if max_categories is not None and max_categories < len(sorted_class_names):
+        sorted_class_names = sorted_class_names[:max_categories]
+        sorted_counts = sorted_counts[:max_categories]
+    
+    # 创建图表
+    fig = plt.figure(figsize=figsize)
+    bars = plt.bar(sorted_class_names, sorted_counts, color='skyblue')
+    
+    # 设置轴标签和标题
+    plt.xlabel('Sample Class', fontsize=12)
+    plt.ylabel('Sample Size', fontsize=12)
+    plt.title('Class Distribution of POLLEN73S Dataset', fontsize=16, pad=20)
+    
+    # 设置Y轴为整数刻度
+    plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
+    
+    # 旋转X轴标签以避免重叠
+    plt.xticks(rotation=45, ha='right', fontsize=8)
+    
+    # 添加数值标签在条形顶部
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2., 
+                 height + max(sorted_counts)*0.01, 
+                 f'{int(height)}', 
+                 ha='center', va='bottom', fontsize=8)
+    
+    # 调整布局
+    plt.tight_layout()
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+    # 保存图表为PNG格式，设置透明背景
+    fig.patch.set_alpha(0.0)
+    plt.savefig(os.path.join(dataset_dir,'dataset_distribution.png'), transparent=True, dpi=300)
+    
+    # 显示图表
+    # plt.show()
+    
+    # 打印统计信息
+    total_samples = sum(counts)
+    print(f"数据集总样本数: {total_samples}")
+    print(f"类别数量: {len(class_names)}")
+    print(f"平均每类样本数: {total_samples/len(class_names):.1f}")
+    print(f"样本最多的类别: {sorted_class_names[0]} ({sorted_counts[0]}个)")
+    print(f"样本最少的类别: {sorted_class_names[-1]} ({sorted_counts[-1]}个)")
